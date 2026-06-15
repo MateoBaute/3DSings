@@ -41,10 +41,15 @@ export default function FormularioCotizar() {
                 body: formData,
             });
 
-            if (response.ok) {
+            const data = await response.json();
+
+            console.log("Web3Forms:", data);
+
+            if (data.success) {
                 setStatus('success');
                 formElement.reset();
             } else {
+                console.error(data);
                 setStatus('error');
             }
         } catch (error) {
