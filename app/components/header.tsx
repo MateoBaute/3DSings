@@ -30,12 +30,6 @@ export default function Header() {
                             Inicio
                         </Link>
                         <Link
-                            href="/modelos"
-                            className="text-zinc-400 hover:text-zinc-50 transition-colors duration-200"
-                        >
-                            Modelos
-                        </Link>
-                        <Link
                             href="/galeria"
                             className="text-zinc-400 hover:text-zinc-50 transition-colors duration-200"
                         >
@@ -45,7 +39,7 @@ export default function Header() {
                             href="/pedido"
                             className="px-4 py-2 bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-zinc-50 hover:bg-zinc-800/50 rounded-lg transition-all duration-200 lowercase first-letter:uppercase"
                         >
-                            Contacto
+                            Enviar Pedido
                         </a>
 
                     </nav>
@@ -83,13 +77,6 @@ export default function Header() {
                             Inicio
                         </Link>
                         <Link
-                            href="/modelos"
-                            className="block px-3 py-2 rounded-xl text-zinc-400 hover:text-zinc-50 hover:bg-zinc-900 transition-colors"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            Modelos
-                        </Link>
-                        <Link
                             href="/galeria"
                             className="block px-3 py-2 rounded-xl text-zinc-400 hover:text-zinc-50 hover:bg-zinc-900 transition-colors"
                             onClick={() => setIsOpen(false)}
@@ -101,7 +88,7 @@ export default function Header() {
                             className="block px-3 py-2 rounded-xl text-center bg-zinc-900 border border-zinc-800 text-zinc-300 hover:text-zinc-50 transition-colors"
                             onClick={() => setIsOpen(false)}
                         >
-                            Contacto
+                            Enviar pedido
                         </a>
                     </nav>
                 )}
