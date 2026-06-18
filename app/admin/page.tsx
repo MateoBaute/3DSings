@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-import Login from '@/app/components/admin/login'
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -24,10 +22,79 @@ export default function AdminPanel() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [eliminandoId, setEliminandoId] = useState<string | null>(null);
-  const [showLogin, setShowLogin] = useState<boolean>(false)
 
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null);
   const [mostrarSheet, setMostrarSheet] = useState(false);
+
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Check auth status
+  const checkAuth = async () => {
+    setCheckingAuth(true);
+    try {
+      const response = await fetch('/api/auth');
+      const data = await response.json();
+      setIsAuthenticated(data.authenticated);
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  // Handle login
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const response = await fetch('/api/admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: loginUsername,
+          password: loginPassword,
+        }),
+      });
+
+      if (response.ok) {
+        // Login successful, re-check auth
+        await checkAuth();
+        // Clear form
+        setLoginUsername('');
+        setLoginPassword('');
+      } else {
+        const errorData = await response.json();
+        setLoginError(errorData.error || 'Login failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('An error occurred');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Load pedidos only if authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      cargarPedidos();
+    }
+  }, [isAuthenticated]);
+
+  // Initial auth check
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   async function cargarPedidos() {
     const { data, error } = await supabase
@@ -38,10 +105,6 @@ export default function AdminPanel() {
     if (!error && data) setPedidos(data);
     setLoading(false);
   }
-
-  useEffect(() => {
-    cargarPedidos();
-  }, []);
 
   useEffect(() => {
     const manejarTeclaEscape = (e: KeyboardEvent) => {
@@ -106,12 +169,67 @@ export default function AdminPanel() {
     }
   };
 
-  if (loading) return <div className="text-center p-20 text-zinc-400">Cargando panel...</div>;
+  // If checking auth, show loading indicator
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-black text-zinc-50 p-8 flex items-center justify-center">
+        <div className="text-zinc-400">Verificando acceso...</div>
+      </div>
+    );
+  }
 
+  // If not authenticated, show login modal
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="bg-zinc-900/80 backdrop-blur-sm rounded-xl p-8 w-full max-w-md">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-6 text-center">Acceso al Panel de Administrador</h2>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Usuario</label>
+              <input
+                type="text"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Ingrese su usuario"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-2">Contraseña</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Ingrese su contraseña"
+                required
+              />
+            </div>
+            {loginError && (
+              <p className="text-sm text-red-500">{loginError}</p>
+            )}
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full px-4 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loginLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+            </button>
+          </form>
+          <p className="mt-4 text-sm text-zinc-500 text-center">
+            Credenciales de prueba: admin / 1234
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated: show admin panel
   return (
     <div className="min-h-screen bg-black text-zinc-50 p-8 font-sans relative overflow-x-hidden">
       <div className="max-w-5xl mx-auto">
-        <Login />
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight">Bandeja de Clientes</h1>
@@ -211,27 +329,27 @@ export default function AdminPanel() {
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* BOTONES DE ACCIÓN: SUSTITUIDO WHATSAPP POR ELIMINAR PEDIDO */}
-            <div className="space-y-3 pt-6 border-t border-zinc-900">
-              {pedidoSeleccionado.archivo_url && (
-                <a
-                  href={pedidoSeleccionado.archivo_url}
-                  download
-                  className="block w-full text-center px-4 py-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 font-bold rounded-xl text-sm transition-colors"
+              {/* BOTONES DE ACCIÓN: SUSTITUIDO WHATSAPP POR ELIMINAR PEDIDO */}
+              <div className="space-y-3 pt-6 border-t border-zinc-900">
+                {pedidoSeleccionado.archivo_url && (
+                  <a
+                    href={pedidoSeleccionado.archivo_url}
+                    download
+                    className="block w-full text-center px-4 py-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-200 font-bold rounded-xl text-sm transition-colors"
+                  >
+                    Descargar Archivo 3D
+                  </a>
+                )}
+                <button
+                  onClick={() => eliminarPedido(pedidoSeleccionado)}
+                  disabled={eliminandoId !== null}
+                  style={{ touchAction: 'manipulation' }}
+                  className="block w-full text-center px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm transition-colors disabled:bg-zinc-800 disabled:text-zinc-600"
                 >
-                  Descargar Archivo 3D
-                </a>
-              )}
-              <button
-                onClick={() => eliminarPedido(pedidoSeleccionado)}
-                disabled={eliminandoId !== null}
-                style={{ touchAction: 'manipulation' }}
-                className="block w-full text-center px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm transition-colors disabled:bg-zinc-800 disabled:text-zinc-600"
-              >
-                {eliminandoId ? "Eliminando..." : "Eliminar Pedido"}
-              </button>
+                  {eliminandoId ? "Eliminando..." : "Eliminar Pedido"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
