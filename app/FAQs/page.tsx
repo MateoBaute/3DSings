@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { createClient } from '@supabase/supabase-js'
 
+import MostrarFaqs from '../components/FAQs/mostrarFaqs';
+
 // Inicialización de Supabase con tus variables de entorno
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,15 +21,12 @@ export default function FAQs() {
         const formElement = e.currentTarget;
         const formData = new FormData(formElement);
 
-        // Extraemos las variables independientes limpias para la base de datos
         const nombre = formData.get('nombre') as string;
         const whatsapp = formData.get('whatsapp') as string;
-        const correo = formData.get('email') as string; // Captura el input name="email"
+        const correo = formData.get('email') as string;
         const descripcion = formData.get('descripcion') as string;
 
         try {
-            // Guardar los datos en tu tabla específica de Supabase
-            // NOTA: Asegurate de cambiar 'faqs_clientes' por el nombre real de tu tabla si es otro
             const { error: dbError } = await supabase
                 .from('faqs_clientes') 
                 .insert([{ nombre, whatsapp, correo, descripcion }]);
@@ -105,7 +104,6 @@ export default function FAQs() {
                         />
                     </div>
 
-                    {/* Descripción */}
                     <div>
                         <label htmlFor="descripcion" className="block text-xs font-semibold tracking-wider uppercase text-zinc-400 mb-2">
                             Detalle su duda
@@ -141,6 +139,7 @@ export default function FAQs() {
                     )}
                 </form>
             </section>
+            <MostrarFaqs />
         </div>
     )
 }
