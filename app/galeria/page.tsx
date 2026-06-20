@@ -1,55 +1,80 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ReactNode } from "react";
+
+declare global {
+  namespace React {
+    namespace JSX {
+      interface IntrinsicElements {
+        'model-viewer': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+          src?: string;
+          poster?: string;
+          alt?: string;
+          'auto-rotate'?: boolean | string;
+          'camera-controls'?: boolean | string;
+          'shadow-intensity'?: string | number;
+          'environment-image'?: string;
+          exposure?: string | number;
+        };
+      }
+    }
+  }
+}
+
+interface Modelo {
+    id: number;
+    titulo: string;
+    imagen: string;
+    descripcion: string;
+    archivo3d: string;
+}
 
 export default function Galeria() {
-    // 1. Estado para almacenar el modelo seleccionado (null significa modal cerrado)
-    const [modeloSeleccionado, setModeloSeleccionado] =  useState<Modelo | null>(null);
+    const [modeloSeleccionado, setModeloSeleccionado] = useState<Modelo | null>(null);
 
-    // Actualicé tu array con campos para la descripción y la ruta del archivo 3D
+    // Cargar el script de model-viewer solo en el cliente
+    useEffect(() => {
+        import("@google/model-viewer");
+    }, []);
 
-    interface Modelo {
-        id: number;
-        titulo: string;
-        imagen: string;
-        descripcion: string;
-        archivo3d: string;
-    }
-    const modelos:Modelo[] = [
+    // NOTA: Para que el visor funcione, tus archivos en 'archivo3d' 
+    // deberían ser formatos 3D reales (como .gltf o .glb) en lugar de un .jpg
+    const modelos: Modelo[] = [
         {
             id: 1,
             titulo: "Soporte para Auriculares",
             imagen: "/galeria/imagen1.jpg",
             descripcion: "Soporte minimalista y resistente diseñado para todo tipo de auriculares de diadema. Evita deformaciones en las almohadillas.",
-            archivo3d: "/galeria/imagen1.jpg"
+            archivo3d: "/modelos/cueva.glb"
         },
         {
             id: 2,
             titulo: "Figura Decorativa",
             imagen: "/galeria/imagen2.jpg",
             descripcion: "Escultura detallada de alta resolución ideal para decoración de interiores o pintura a mano. Impresa con filamento PLA premium.",
-            archivo3d: "/galeria/imagen2.jpg"
+            archivo3d: "/galeria/figura.glb"
         },
         {
             id: 3,
             titulo: "Pieza Mecánica",
             imagen: "/galeria/imagen3.jpg",
             descripcion: "Engranaje reforzado diseñado para soportar alta fricción mecánica. Optimizado para impresión en material PETG o ABS.",
-            archivo3d: "/galeria/imagen3.jpg"
+            archivo3d: "/galeria/engranaje.glb"
         },
         {
             id: 4,
             titulo: "Organizador",
             imagen: "/galeria/imagen4.jpg",
             descripcion: "Organizador modular de escritorio con múltiples compartimentos para bolígrafos, tarjetas de presentación y tarjetas SD.",
-            archivo3d: "/galeria/imagen4.jpg"
+            archivo3d: "/galeria/organizador1.glb"
         },
         {
             id: 5,
             titulo: "Organizador 2",
             imagen: "/galeria/imagen5.jpg",
             descripcion: "Bandeja apilable diseñada para la gestión de cables y pequeños componentes electrónicos en espacios de trabajo reducidos.",
-            archivo3d: "/galeria/imagen5.jpg"
+            archivo3d: "/galeria/organizador2.glb"
         },
     ];
 
@@ -98,31 +123,38 @@ export default function Galeria() {
                 </div>
             </div>
 
-            {/* 3. Ventana Emergente (Modal) */}
+            {/* Ventana Emergente (Modal con Visor 3D) */}
             {modeloSeleccionado && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
-                    onClick={() => setModeloSeleccionado(null)} // Cierra al hacer clic en el fondo negro
+                    onClick={() => setModeloSeleccionado(null)}
                 >
                     <div
                         className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl relative"
-                        onClick={(e) => e.stopPropagation()} // Evita que el modal se cierre al hacer clic dentro
+                        onClick={(e) => e.stopPropagation()}
                     >
                         {/* Botón Cerrar (X) */}
                         <button
-                            className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-100 text-xl font-bold bg-zinc-800/50 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                            className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-100 text-xl font-bold bg-zinc-800/80 w-8 h-8 rounded-full flex items-center justify-center transition-colors z-10"
                             onClick={() => setModeloSeleccionado(null)}
                         >
                             &times;
                         </button>
 
-                        {/* Contenido */}
-                        <div className="aspect-video w-full overflow-hidden">
-                            <img
-                                src={modeloSeleccionado.imagen}
+                        {/* Reemplazo de Imagen fija por Visor interactivo 3D */}
+                        <div className="aspect-video w-full bg-zinc-950 border-b border-zinc-800 relative">
+                            <model-viewer
+                                src={modeloSeleccionado.archivo3d}
+                                poster={modeloSeleccionado.archivo3d}
                                 alt={modeloSeleccionado.titulo}
-                                className="w-full h-full object-cover"
-                            />
+                                auto-rotate
+                                camera-controls
+                                shadow-intensity="1"
+                                environment-image="neutral"
+                                exposure="1"
+                                style={{ width: '100%', height: '100%', backgroundColor: '#09090b' }}
+                            >
+                            </model-viewer>
                         </div>
 
                         <div className="p-6">
